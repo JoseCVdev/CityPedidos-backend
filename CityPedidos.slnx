@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="CityPedidos.Application/CityPedidos.Application.csproj" Id="586201ab-ecc1-4d1d-a48c-0e35ba78ba30" />
+  <Project Path="CityPedidos.Domain/CityPedidos.Domain.csproj" Id="f3e3a726-66f3-4a78-92dd-5592a8dc3313" />
+  <Project Path="CityPedidos.Infrastructure/CityPedidos.Infrastructure.csproj" Id="f203be13-86a4-46f4-9802-b3e64d0085af" />
+  <Project Path="CityPedidos/CityPedidos.csproj" />
+</Solution>
