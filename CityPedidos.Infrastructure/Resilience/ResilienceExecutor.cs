@@ -1,4 +1,5 @@
-﻿using Polly;
+﻿using Microsoft.Extensions.Logging;
+using Polly;
 
 namespace CityPedidos.Infrastructure.Resilience
 {
@@ -11,11 +12,17 @@ namespace CityPedidos.Infrastructure.Resilience
     public class ResilienceExecutor : IResilienceExecutor
     {
         private readonly IAsyncPolicy _policy;
+        private readonly ILogger<ResilienceExecutor> _logger;
 
-        public ResilienceExecutor()
+        public ResilienceExecutor(ILogger<ResilienceExecutor> logger)
         {
-            _policy = PollyPolicies.RetryPolicy
-                .WrapAsync(PollyPolicies.CircuitBreakerPolicy);
+            _logger = logger;
+
+            _policy = PollyPolicies
+                .CreateRetryPolicy(_logger)
+                .WrapAsync(
+                    PollyPolicies.CreateCircuitBreakerPolicy(_logger)
+                );
         }
 
         public async Task ExecuteAsync(Func<Task> action)

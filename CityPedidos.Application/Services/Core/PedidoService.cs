@@ -5,6 +5,7 @@ using CityPedidos.Application.Exceptions;
 using CityPedidos.Application.Interfaces.Core;
 using CityPedidos.Domain.Entities.Core;
 using CityPedidos.Domain.Entities.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace CityPedidos.Application.Services.Core
 {
@@ -12,15 +13,22 @@ namespace CityPedidos.Application.Services.Core
     {
         private readonly IPedidoRepository _pedidoRepo;
         private readonly IClienteRepository _clienteRepo;
-
-        public PedidoService(IPedidoRepository pedidoRepo, IClienteRepository clienteRepo)
+        private readonly ILogger<PedidoService> _logger;
+        public PedidoService(IPedidoRepository pedidoRepo, IClienteRepository clienteRepo, ILogger<PedidoService> logger)
         {
             _pedidoRepo = pedidoRepo;
             _clienteRepo = clienteRepo;
+            _logger = logger;
         }
 
         public async Task<ApiResponse<PedidoRegistrarResponseDto>> RegistrarPedido(PedidoRegistrarRequestDto request)
         {
+
+            _logger.LogInformation(
+                "Registrando pedido | ClienteId: {ClienteId} | Total: {Total}",
+                request.idCliente,
+                request.total);
+
             // Validar que el total sea mayor a 0
             if (request.total <= 0) throw new BadRequestException("El total debe ser mayor a 0");
 
@@ -42,6 +50,10 @@ namespace CityPedidos.Application.Services.Core
             };
 
             await _pedidoRepo.registrarPedido(pedido);
+
+            _logger.LogInformation(
+                "Pedido registrado correctamente | NumeroPedido: {NumeroPedido}",
+                nuevoNumero);
 
             return ApiResponse<PedidoRegistrarResponseDto>.Success(new PedidoRegistrarResponseDto
             {
@@ -103,6 +115,10 @@ namespace CityPedidos.Application.Services.Core
             if (pedido == null) throw new BadRequestException("Pedido no encontrado");
 
             await _pedidoRepo.eliminarPedido(id);
+
+            _logger.LogWarning(
+                "Pedido eliminado | PedidoId: {PedidoId}",
+                id);
 
             return ApiResponse<bool>.Success(true);
         }

@@ -108,7 +108,7 @@ namespace CityPedidos.Application.Services.Core
         {
             var cliente = await _clienteRepo.obtenerPorNumeroDocumento(numeroDocumento);
 
-            if (cliente == null) throw new BadRequestException("Cliente no encontrado");
+            if (cliente == null || !cliente.bitEstado) throw new BadRequestException("Cliente no encontrado");
 
             return ApiResponse<ClienteResponseDto>.Success(
                 new ClienteResponseDto

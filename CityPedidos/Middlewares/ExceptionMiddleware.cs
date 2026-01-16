@@ -1,4 +1,5 @@
 ﻿using CityPedidos.Application.Exceptions;
+using Serilog;
 using System.Text.Json;
 
 namespace CityPedidos.Middlewares
@@ -32,6 +33,13 @@ namespace CityPedidos.Middlewares
             }
             catch (Exception ex)
             {
+                Log.Error(
+                    ex,
+                    "Unhandled exception | Path: {Path} | Method: {Method}",
+                    context.Request.Path,
+                    context.Request.Method
+                    );
+
                 await HandleExceptionAsync(context, ex);
             }
         }

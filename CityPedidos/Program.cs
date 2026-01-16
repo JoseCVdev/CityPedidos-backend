@@ -11,6 +11,7 @@ using CityPedidos.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
@@ -20,6 +21,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// CONFIGURACION LOGGING
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information() // nivel mínimo global
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", Serilog.Events.LogEventLevel.Warning) // solo warnings y errores de EF Core
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File(
+        "logs/log-.txt",
+        rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 // REGISTRO DEL DBCONTEXT
 builder.Services.AddDbContext<PedidosDbContext>(options =>
@@ -91,17 +105,24 @@ builder.Services
 // RATE LIMITER
 builder.Services.AddRateLimiter(options =>
 {
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsync("Demasiadas solicitudes. Intenta más tarde.", cancellationToken);
+    };
+
     options.AddPolicy("fixed", context =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString(),
             factory: _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 100,           // 100 requests
-                Window = TimeSpan.FromMinutes(1),
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 2
+                PermitLimit = 5, // Cantidad máxima de requests permitidas por ventana
+                Window = TimeSpan.FromSeconds(10), // Duración de la ventana de tiempo para contar los requests
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst, // Orden de los requests en cola si la cola existe
+                QueueLimit = 0 // 0 significa que no hay cola y requests extras se rechazan de inmediato
             }));
 });
+
 
 // CORS
 builder.Services.AddCors(options =>
